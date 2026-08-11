@@ -1,3 +1,5 @@
 package com.payflow.api.dto
 
-data class HolleResponse()
+data class HelloResponse(
+    val message: String
+)
