@@ -1,1774 +1,1413 @@
-# Clase 3 — Spring Framework: IoC, Dependency Injection y Beans
+# Clase 3 — Primer proyecto Spring Boot con Kotlin
 
-> **Fase:** 1 — Fundamentos de Spring
+> **Fase:** 0 — Preparación
 > **Estado:** 🟢 Completada
 > **Proyecto:** PayFlow API
 
 ---
 
-# 🎯 Objetivos
+# Objetivos
 
 Al terminar esta clase deberías poder:
 
-* Explicar qué problema resuelve Spring.
-* Entender IoC — Inversion of Control.
-* Entender Dependency Injection.
-* Diferenciar Dependency Injection de simplemente crear objetos.
-* Entender qué es un Bean.
-* Entender qué es el Application Context.
-* Comprender cómo Spring descubre y administra componentes.
-* Conocer `@Component`, `@Service`, `@Repository` y `@Controller`.
-* Entender constructor injection.
-* Entender por qué preferimos constructor injection.
-* Entender el concepto de Spring Container.
-* Comprender el ciclo básico de creación de Beans.
-* Entender qué sucede cuando Spring inicia una aplicación.
-* Poder explicar estos conceptos en una entrevista técnica.
+* Crear un proyecto Spring Boot con Kotlin.
+* Entender Spring Initializr.
+* Entender la estructura básica de un proyecto Gradle.
+* Entender `build.gradle.kts`.
+* Entender `settings.gradle.kts`.
+* Entender `src/main` y `src/test`.
+* Entender `@SpringBootApplication`.
+* Ejecutar una aplicación Spring Boot.
+* Entender qué ocurre durante el startup.
+* Crear nuestro primer `@RestController`.
+* Crear un endpoint `GET`.
+* Probar una request HTTP.
+* Entender la relación entre HTTP y Spring MVC.
+* Diferenciar Spring Framework de Spring Boot.
 
 ---
 
-# 1. ¿Qué es Spring?
+# 1. Nuestro proyecto
 
-Spring es un framework para desarrollar aplicaciones Java y Kotlin.
-
-Pero decir solamente:
-
-> "Spring es un framework"
-
-no explica demasiado.
-
-Una de las ideas centrales de Spring es:
-
-> **Spring se encarga de crear, configurar y administrar objetos de nuestra aplicación.**
-
-Esto nos permite concentrarnos en la lógica de negocio.
-
-Por ejemplo, imaginemos:
+Durante todo el curso vamos a construir un proyecto llamado:
 
 ```text
-RechargeController
-       ↓
-RechargeService
-       ↓
-RechargeRepository
+PayFlow API
 ```
 
-Podríamos crear manualmente todos esos objetos:
+La idea es que no sea simplemente un proyecto para aprender annotations.
 
-```kotlin
-val repository = RechargeRepository()
-val service = RechargeService(repository)
-val controller = RechargeController(service)
+Vamos a construir progresivamente un backend que pueda representar un sistema real.
+
+Conceptualmente:
+
+```text
+                    PayFlow API
+                         │
+          ┌──────────────┼──────────────┐
+          │              │              │
+       Users          Payments       Recharges
+          │              │              │
+          └──────────────┼──────────────┘
+                         │
+                     PostgreSQL
 ```
 
-Pero a medida que nuestra aplicación crece, esto se vuelve difícil de mantener.
+Más adelante agregaremos:
 
-Spring se encarga de administrar estas dependencias.
+* autenticación;
+* autorización;
+* usuarios;
+* pagos;
+* recargas;
+* validaciones;
+* persistencia;
+* PostgreSQL;
+* manejo de errores;
+* tests;
+* Docker;
+* documentación;
+* seguridad.
+
+Pero vamos paso a paso.
 
 ---
 
-# 2. El problema: crear objetos manualmente
+# 2. ¿Qué es Spring Boot?
 
-Supongamos:
+Antes hablamos de Spring Framework.
 
-```kotlin
-class RechargeRepository {
-
-    fun save() {
-        // guardar recarga
-    }
-}
-```
-
-Y nuestro Service:
-
-```kotlin
-class RechargeService(
-    private val repository: RechargeRepository
-) {
-
-    fun recharge() {
-        repository.save()
-    }
-}
-```
-
-Para utilizarlo manualmente:
-
-```kotlin
-val repository = RechargeRepository()
-
-val service = RechargeService(
-    repository
-)
-```
-
-Esto funciona.
-
-Pero imaginemos que nuestra aplicación crece:
+Ahora aparece:
 
 ```text
-RechargeController
-        ↓
-RechargeService
-        ↓
-RechargeRepository
-        ↓
-Database
+Spring Boot
 ```
 
-Además:
+Spring Boot se construye sobre Spring Framework y simplifica la creación y configuración de aplicaciones Spring.
+
+Podemos pensar:
 
 ```text
-PaymentService
-        ↓
-PaymentRepository
-        ↓
-Database
+Spring Framework
+       │
+       └── Spring Boot
+              │
+              ├── auto-configuración
+              ├── starters
+              ├── servidor embebido
+              └── convenciones
+```
+
+Spring Framework proporciona gran parte de la infraestructura.
+
+Spring Boot facilita utilizar esa infraestructura para crear aplicaciones reales rápidamente.
+
+---
+
+# 3. Spring Framework vs Spring Boot
+
+Es importante no confundir ambos conceptos.
+
+## Spring Framework
+
+Proporciona conceptos e infraestructura como:
+
+* IoC;
+* Dependency Injection;
+* Beans;
+* ApplicationContext;
+* Spring MVC;
+* Spring Data;
+* Spring Security.
+
+## Spring Boot
+
+Se construye sobre Spring Framework y simplifica la creación y configuración de aplicaciones.
+
+Entre otras cosas proporciona:
+
+* auto-configuración;
+* starters;
+* servidor embebido;
+* convenciones;
+* configuración simplificada.
+
+Por ejemplo, podemos crear una aplicación web y ejecutarla directamente:
+
+```bash
+./gradlew bootRun
+```
+
+sin tener que configurar manualmente un servidor externo.
+
+> **Importante:** Spring Boot no es simplemente un plugin de Spring Framework. Es un proyecto construido sobre Spring que simplifica su utilización.
+
+---
+
+# 4. Spring Initializr
+
+Para crear nuestro proyecto utilizaremos:
+
+**Spring Initializr**
+
+https://start.spring.io/
+
+Es una herramienta que genera la estructura inicial de un proyecto Spring Boot.
+
+Podemos elegir:
+
+```text
+Project
+Language
+Spring Boot
+Group
+Artifact
+Packaging
+Java
+Dependencies
+```
+
+---
+
+# 5. Configuración de PayFlow
+
+Para nuestro proyecto utilizaremos:
+
+```text
+Project: Gradle - Kotlin
+Language: Kotlin
+Packaging: Jar
+Java: 21
+```
+
+Group:
+
+```text
+com.payflow
+```
+
+Artifact:
+
+```text
+payflow-api
+```
+
+Name:
+
+```text
+payflow-api
+```
+
+Description:
+
+```text
+Backend API for PayFlow
+```
+
+Package name:
+
+```text
+com.payflow.api
+```
+
+Como dependencia inicial:
+
+```text
+Spring Web
+```
+
+No vamos a agregar todas las dependencias desde el principio.
+
+La idea es incorporar cada tecnología cuando realmente entendamos para qué sirve.
+
+---
+
+# 6. Estructura inicial
+
+Una vez generado el proyecto tendremos aproximadamente:
+
+```text
+payflow-api/
+│
+├── gradle/
+│
+├── src/
+│   ├── main/
+│   │   ├── kotlin/
+│   │   └── resources/
+│   │
+│   └── test/
+│       └── kotlin/
+│
+├── .gitignore
+├── build.gradle.kts
+├── gradlew
+├── gradlew.bat
+├── settings.gradle.kts
+└── ...
+```
+
+No hace falta memorizar todo todavía.
+
+Vamos a entender cada parte.
+
+---
+
+# 7. `src/main`
+
+Dentro de:
+
+```text
+src/main
+```
+
+tenemos el código principal de nuestra aplicación.
+
+Conceptualmente:
+
+```text
+src/main
+   │
+   ├── kotlin
+   │
+   └── resources
+```
+
+---
+
+# 8. `src/main/kotlin`
+
+Acá estará nuestro código Kotlin.
+
+Por ejemplo:
+
+```text
+src/main/kotlin/com/payflow/api/
+```
+
+y dentro tendremos:
+
+```text
+PayflowApplication.kt
+```
+
+Más adelante tendremos:
+
+```text
+controller/
+service/
+repository/
+domain/
+dto/
+config/
+exception/
+```
+
+Pero todavía no vamos a crear todas esas carpetas.
+
+---
+
+# 9. `src/main/resources`
+
+Acá colocaremos recursos de la aplicación.
+
+Por ejemplo:
+
+```text
+application.properties
+```
+
+o:
+
+```text
+application.yml
+```
+
+Más adelante configuraremos:
+
+* puerto;
+* base de datos;
+* logs;
+* Spring;
+* variables de entorno;
+* etc.
+
+---
+
+# 10. `src/test`
+
+Esta carpeta contiene nuestros tests.
+
+```text
+src/test/kotlin
+```
+
+La estructura separa:
+
+```text
+src/main
+```
+
+de:
+
+```text
+src/test
+```
+
+Nuestros tests forman parte del proyecto, pero no son código de producción.
+
+Más adelante veremos:
+
+```text
+Unit Tests
+Integration Tests
+Spring Boot Tests
+```
+
+---
+
+# 11. `build.gradle.kts`
+
+Este archivo es fundamental:
+
+```text
+build.gradle.kts
+```
+
+Le indica a Gradle cómo construir nuestro proyecto.
+
+Entre otras cosas define:
+
+* plugins;
+* dependencias;
+* configuración;
+* tareas;
+* versiones.
+
+Podemos encontrar algo conceptualmente similar a:
+
+```kotlin
+plugins {
+    kotlin("jvm")
+    kotlin("plugin.spring")
+    id("org.springframework.boot")
+}
 ```
 
 Y:
 
-```text
-NotificationService
-        ↓
-EmailService
-        ↓
-External API
-```
-
-La cantidad de objetos y dependencias empieza a crecer.
-
-Si nosotros tenemos que crear y conectar manualmente todo:
-
 ```kotlin
-val repository = ...
-val service = ...
-val notificationService = ...
-val controller = ...
-```
-
-terminamos teniendo código encargado de crear otros objetos.
-
-Eso se vuelve difícil de mantener.
-
----
-
-# 3. ¿Qué pasa si cambia una dependencia?
-
-Supongamos:
-
-```kotlin
-class RechargeService(
-    private val repository: RechargeRepository
-)
-```
-
-Más adelante decidimos agregar:
-
-```kotlin
-class NotificationService
-```
-
-Entonces:
-
-```kotlin
-class RechargeService(
-    private val repository: RechargeRepository,
-    private val notificationService: NotificationService
-)
-```
-
-Ahora quien construye `RechargeService` necesita conocer también `NotificationService`.
-
-Y si `NotificationService` tiene otra dependencia:
-
-```kotlin
-class NotificationService(
-    private val emailClient: EmailClient
-)
-```
-
-la cadena continúa:
-
-```text
-RechargeService
-      │
-      ├── RechargeRepository
-      │
-      └── NotificationService
-                 │
-                 └── EmailClient
-```
-
-¿Quién crea todo esto?
-
-Spring.
-
----
-
-# 4. Inversion of Control — IoC
-
-IoC significa:
-
-> **Inversion of Control**
-
-En español:
-
-> **Inversión de Control.**
-
-La idea básica es:
-
-> Nuestro código deja de ser completamente responsable de controlar la creación y administración de sus dependencias.
-
-Sin Spring:
-
-```text
-Nuestro código
-     │
-     ├── crea Repository
-     ├── crea Service
-     ├── crea Controller
-     └── conecta todo
-```
-
-Con Spring:
-
-```text
-Spring
-  │
-  ├── crea Repository
-  ├── crea Service
-  ├── crea Controller
-  └── conecta dependencias
-```
-
-Nosotros definimos **qué necesita cada componente**.
-
-Spring se ocupa de construir y conectar esos componentes.
-
-Esto es IoC.
-
----
-
-# 5. Dependency Injection
-
-Dependency Injection significa:
-
-> **Inyección de Dependencias.**
-
-Supongamos:
-
-```kotlin
-class RechargeService(
-    private val repository: RechargeRepository
-)
-```
-
-`RechargeService` tiene una dependencia:
-
-```text
-RechargeRepository
-```
-
-En lugar de crearla internamente:
-
-```kotlin
-class RechargeService {
-
-    private val repository = RechargeRepository()
+dependencies {
+    implementation("org.springframework.boot:spring-boot-starter-web")
 }
 ```
 
-la recibe desde afuera:
+No necesitamos memorizar la sintaxis todavía.
 
-```kotlin
-class RechargeService(
-    private val repository: RechargeRepository
-)
-```
+Lo importante es entender:
 
-Eso es Dependency Injection.
+> Gradle utiliza este archivo para saber cómo construir nuestra aplicación.
 
 ---
 
-# 6. IoC vs Dependency Injection
+# 12. ¿Qué es Gradle?
 
-Es muy común confundir estos dos conceptos.
+Gradle es una herramienta de build.
 
-### IoC
+Nos permite:
 
-Es el concepto general:
-
-> El control de la creación y administración de objetos es delegado al framework o container.
-
-### Dependency Injection
-
-Es uno de los mecanismos utilizados para implementar IoC:
-
-> Las dependencias son proporcionadas al objeto desde afuera.
-
-Podemos visualizarlo:
-
-```text
-IoC
- │
- └── Dependency Injection
-```
-
-Por eso:
-
-> **Dependency Injection es una forma de aplicar Inversion of Control.**
-
----
-
-# 7. Una analogía sencilla
-
-Imaginemos un restaurante.
-
-Un chef necesita:
-
-```text
-cuchillo
-ingredientes
-horno
-```
-
-Podría construir su propio horno cada vez que necesita cocinar.
-
-Sería absurdo.
-
-Es mejor que alguien se encargue de preparar el entorno y entregarle lo necesario.
-
-El chef simplemente dice:
-
-> Necesito un horno y estos ingredientes.
-
-En nuestro software:
-
-```text
-Service
-   ↓
-"Necesito Repository"
-```
-
-Spring responde:
-
-```text
-"Acá tenés tu Repository."
-```
-
-El Service no necesita saber cómo fue creado.
-
----
-
-# 8. Constructor Injection
-
-En Spring existen distintas formas de inyectar dependencias.
-
-La que vamos a utilizar principalmente es:
-
-> **Constructor Injection**
+* compilar;
+* ejecutar tests;
+* administrar dependencias;
+* empaquetar la aplicación;
+* ejecutar tareas.
 
 Por ejemplo:
 
-```kotlin
-class RechargeService(
-    private val repository: RechargeRepository
-)
+```bash
+./gradlew build
 ```
 
-La dependencia se recibe mediante el constructor.
+construye el proyecto.
+
+```bash
+./gradlew test
+```
+
+ejecuta los tests.
+
+```bash
+./gradlew bootRun
+```
+
+ejecuta nuestra aplicación Spring Boot.
 
 ---
 
-# 9. ¿Por qué Constructor Injection?
+# 13. Gradle Wrapper
 
-## 9.1 Dependencias obligatorias
+El proyecto incluye:
 
-Si un Service necesita un Repository para funcionar:
-
-```kotlin
-class RechargeService(
-    private val repository: RechargeRepository
-)
+```text
+gradlew
 ```
 
-es imposible crear correctamente el Service sin proporcionar el Repository.
+y:
 
-Eso hace que el diseño sea explícito.
+```text
+gradlew.bat
+```
 
----
+Esto se conoce como:
 
-## 9.2 Inmutabilidad
+> **Gradle Wrapper**
 
-Podemos utilizar:
+El Wrapper permite que el proyecto utilice una versión específica de Gradle sin depender de una instalación global determinada.
 
-```kotlin
-private val repository
+Por eso normalmente utilizaremos:
+
+```bash
+./gradlew
 ```
 
 en lugar de:
 
-```kotlin
-private var repository
+```bash
+gradle
 ```
-
-La dependencia no cambia durante la vida del objeto.
 
 ---
 
-## 9.3 Testeabilidad
+# 14. `settings.gradle.kts`
 
-Podemos crear el Service manualmente en un test:
+Otro archivo importante:
 
-```kotlin
-val repository = FakeRechargeRepository()
-
-val service = RechargeService(
-    repository
-)
+```text
+settings.gradle.kts
 ```
 
-No necesitamos levantar todo Spring.
-
-Esto es extremadamente importante.
-
----
-
-## 9.4 Dependencias visibles
-
-Al mirar:
-
-```kotlin
-class RechargeService(
-    private val repository: RechargeRepository,
-    private val notificationService: NotificationService
-)
-```
-
-podemos ver inmediatamente de qué depende el Service.
-
-No tenemos que buscar dependencias escondidas en distintas partes de la clase.
-
----
-
-# 10. ¿Qué es un Bean?
-
-Un **Bean** es un objeto que es administrado por Spring.
+Se utiliza para configurar el proyecto Gradle y definir su nombre.
 
 Por ejemplo:
 
 ```kotlin
-@Service
-class RechargeService
+rootProject.name = "payflow-api"
 ```
 
-Spring detectará esa clase y creará una instancia administrada por el Spring Container.
+En proyectos grandes también puede utilizarse para definir módulos.
 
-Esa instancia es un Bean.
-
-Podemos visualizarlo:
-
-```text
-Spring Container
-       │
-       ├── RechargeService Bean
-       ├── RechargeRepository Bean
-       ├── PaymentService Bean
-       └── NotificationService Bean
-```
-
-Spring administra estos objetos.
+Por ahora no necesitamos modificarlo.
 
 ---
 
-# 11. Spring Container
+# 15. Nuestra Application
 
-El Spring Container es el componente encargado de administrar los Beans.
-
-Conceptualmente:
-
-```text
-              Spring Container
-                     │
-        ┌────────────┼────────────┐
-        │            │            │
-        ▼            ▼            ▼
-   Controller     Service      Repository
-```
-
-El Container:
-
-* crea Beans;
-* configura Beans;
-* conecta dependencias;
-* administra su ciclo de vida.
-
----
-
-# 12. ApplicationContext
-
-Una de las implementaciones principales del Spring Container es:
-
-```text
-ApplicationContext
-```
-
-Podemos imaginarlo como:
-
-> El contexto donde Spring mantiene y administra los Beans de nuestra aplicación.
-
-Por ejemplo:
-
-```text
-ApplicationContext
-       │
-       ├── RechargeController
-       ├── RechargeService
-       ├── RechargeRepository
-       ├── PaymentService
-       └── NotificationService
-```
-
-Cuando Spring arranca nuestra aplicación, crea este contexto y registra los componentes correspondientes.
-
----
-
-# 13. `@Component`
-
-Una forma básica de indicarle a Spring:
-
-> Esta clase debe ser administrada como Bean.
-
-es:
+Spring Initializr generará algo parecido a:
 
 ```kotlin
+package com.payflow.api
+
+import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.boot.runApplication
+
+@SpringBootApplication
+class PayflowApplication
+
+fun main(args: Array<String>) {
+    runApplication<PayflowApplication>(*args)
+}
+```
+
+Este archivo es extremadamente importante.
+
+---
+
+# 16. `fun main`
+
+Como cualquier aplicación Kotlin/JVM tenemos:
+
+```kotlin
+fun main(args: Array<String>) {
+    // ...
+}
+```
+
+Es el punto de entrada de nuestra aplicación.
+
+Cuando ejecutamos:
+
+```bash
+./gradlew bootRun
+```
+
+la aplicación termina llegando a ese punto de entrada.
+
+---
+
+# 17. `runApplication`
+
+Tenemos:
+
+```kotlin
+runApplication<PayflowApplication>(*args)
+```
+
+Esto inicia nuestra aplicación Spring Boot.
+
+Simplificando:
+
+```text
+main()
+  │
+  ▼
+runApplication()
+  │
+  ▼
+Spring Boot inicia
+  │
+  ▼
+ApplicationContext
+  │
+  ▼
+Beans
+  │
+  ▼
+Servidor web
+  │
+  ▼
+Aplicación lista
+```
+
+---
+
+# 18. `@SpringBootApplication`
+
+Tenemos:
+
+```kotlin
+@SpringBootApplication
+class PayflowApplication
+```
+
+Es importante distinguir:
+
+```text
+PayflowApplication
+```
+
+es la clase.
+
+Mientras que:
+
+```text
+@SpringBootApplication
+```
+
+es una annotation aplicada a esa clase.
+
+Esta annotation indica que esa clase es la configuración principal de nuestra aplicación Spring Boot.
+
+Conceptualmente agrupa varias funcionalidades:
+
+```text
+@SpringBootApplication
+        │
+        ├── @SpringBootConfiguration
+        ├── @EnableAutoConfiguration
+        └── @ComponentScan
+```
+
+No necesitamos memorizar todavía todos los detalles internos.
+
+Pero sí debemos entender el concepto.
+
+---
+
+# 19. `@ComponentScan`
+
+Spring necesita encontrar componentes como:
+
+```text
 @Component
-class EmailService
+@Service
+@Repository
+@Controller
 ```
 
-Spring detectará esta clase durante el component scanning.
+`@ComponentScan` participa en ese proceso.
 
-Entonces tendremos:
+Por defecto, Spring Boot comienza a buscar componentes desde el package donde está nuestra clase principal.
+
+Por eso tendremos:
 
 ```text
-EmailService
-     ↓
-Spring Container
-     ↓
-EmailService Bean
+com.payflow.api
+```
+
+como package raíz.
+
+Por ejemplo:
+
+```text
+com.payflow.api
+       │
+       ├── PayflowApplication
+       │
+       ├── controller
+       │
+       ├── service
+       │
+       └── repository
+```
+
+Spring podrá encontrar esos componentes.
+
+---
+
+# 20. Ejecutar la aplicación
+
+Desde la raíz del proyecto:
+
+```bash
+./gradlew bootRun
+```
+
+En Windows:
+
+```text
+gradlew.bat bootRun
+```
+
+Si todo está correcto veremos los logs de Spring Boot.
+
+También veremos información relacionada con el servidor web y el puerto.
+
+Por defecto:
+
+```text
+8080
 ```
 
 ---
 
-# 14. `@Service`
+# 21. Nuestro primer servidor
 
-`@Service` es una especialización de `@Component`.
+Cuando Spring Boot inicia nuestra aplicación web:
 
-Se utiliza normalmente para representar componentes que contienen lógica de negocio.
+```text
+PayFlow API
+     │
+     ▼
+Embedded Web Server
+     │
+     ▼
+Port 8080
+```
 
-Por ejemplo:
+Por eso podemos acceder a:
+
+```text
+http://localhost:8080
+```
+
+`localhost` significa nuestra propia máquina.
+
+---
+
+# 22. Crear nuestro primer Controller
+
+Creamos:
+
+```text
+controller/
+```
+
+Dentro:
+
+```text
+PayflowController.kt
+```
+
+Código:
 
 ```kotlin
-@Service
-class RechargeService {
+package com.payflow.api.controller
 
-    fun recharge() {
-        // lógica de negocio
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RestController
+
+@RestController
+class PayflowController {
+
+    @GetMapping("/api/hello")
+    fun hello(): String {
+        return "Hello from PayFlow API"
     }
 }
 ```
 
-Conceptualmente:
-
-```text
-@Service
-    ↓
-@Component
-    ↓
-Spring Bean
-```
-
-Cuando vemos:
-
-```kotlin
-@Service
-class RechargeService
-```
-
-sabemos:
-
-> Esta clase pertenece a la capa de servicio/lógica de negocio.
-
 ---
 
-# 15. `@Repository`
+# 23. ¿Qué hace `@RestController`?
 
-`@Repository` se utiliza para componentes relacionados con acceso a datos.
-
-Por ejemplo:
-
-```kotlin
-@Repository
-class RechargeRepository
-```
-
-Esto expresa:
-
-> Esta clase pertenece a la capa de persistencia/acceso a datos.
-
-Más adelante utilizaremos principalmente:
-
-```text
-Spring Data JPA
-```
-
-y muchas veces ni siquiera necesitaremos implementar manualmente el Repository.
-
----
-
-# 16. `@Controller`
-
-`@Controller` se utiliza para componentes que reciben solicitudes HTTP en aplicaciones Spring MVC.
-
-Por ejemplo:
-
-```kotlin
-@Controller
-class RechargeController
-```
-
-Más adelante veremos:
+Tenemos:
 
 ```kotlin
 @RestController
+class PayflowController
 ```
 
-que será especialmente importante para nuestras APIs REST.
+Le estamos indicando a Spring:
+
+> Esta clase manejará requests HTTP y sus métodos producirán respuestas para una API REST.
+
+Spring detectará el Controller y lo registrará como Bean.
 
 ---
 
-# 17. Arquitectura básica
+# 24. ¿Qué hace `@GetMapping`?
 
-Nuestro backend tendrá aproximadamente:
+Tenemos:
+
+```kotlin
+@GetMapping("/api/hello")
+```
+
+Esto significa:
+
+> Cuando llegue una request HTTP `GET` a `/api/hello`, ejecutá este método.
+
+Entonces:
 
 ```text
-                 HTTP Request
-                      │
-                      ▼
-               ┌─────────────┐
-               │ Controller  │
-               └──────┬──────┘
-                      │
-                      ▼
-               ┌─────────────┐
-               │   Service   │
-               └──────┬──────┘
-                      │
-                      ▼
-               ┌─────────────┐
-               │ Repository  │
-               └──────┬──────┘
-                      │
-                      ▼
-                 PostgreSQL
+GET /api/hello
+       │
+       ▼
+PayflowController
+       │
+       ▼
+hello()
 ```
-
-Cada capa tiene una responsabilidad.
-
-Esto conecta directamente con la Clase 1:
-
-> Si ponemos todo en el Controller terminamos mezclando routing, HTTP y lógica de negocio.
-
-Ahora Spring nos ayuda a construir estas capas y conectar sus dependencias.
 
 ---
 
-# 18. Primer ejemplo completo
+# 25. Probar nuestro endpoint
 
-Imaginemos:
+Con la aplicación ejecutándose:
+
+```bash
+./gradlew bootRun
+```
+
+abrimos:
+
+```text
+http://localhost:8080/api/hello
+```
+
+Deberíamos obtener:
+
+```text
+Hello from PayFlow API
+```
+
+Acabamos de crear nuestra primera API REST con Kotlin + Spring Boot.
+
+---
+
+# 26. ¿Qué ocurrió internamente?
+
+Cuando hacemos:
+
+```text
+GET /api/hello
+```
+
+el flujo simplificado es:
+
+```text
+Browser / Postman / curl
+          │
+          │ HTTP GET
+          ▼
+     Port 8080
+          │
+          ▼
+    Spring Web
+          │
+          ▼
+PayflowController
+          │
+          ▼
+       hello()
+          │
+          ▼
+"Hello from PayFlow API"
+```
+
+Este concepto conecta directamente con la Clase 1.
+
+---
+
+# 27. Relación con HTTP
+
+Nuestra request:
+
+```http
+GET /api/hello
+```
+
+contiene principalmente:
+
+```text
+Method:
+GET
+
+Path:
+/api/hello
+```
+
+Para este ejemplo no necesitamos Body.
+
+Spring recibe esa request y encuentra el método:
 
 ```kotlin
-@Repository
-class RechargeRepository {
+@GetMapping("/api/hello")
+```
 
-    fun save() {
-        println("Saving recharge")
+---
+
+# 28. ¿Por qué `GET`?
+
+Estamos realizando una operación de lectura.
+
+No estamos:
+
+* creando un recurso;
+* modificando un recurso;
+* eliminando un recurso.
+
+Por eso utilizamos:
+
+```text
+GET
+```
+
+Más adelante utilizaremos:
+
+```text
+GET
+POST
+PUT
+PATCH
+DELETE
+```
+
+dependiendo de la operación.
+
+---
+
+# 29. `curl`
+
+También podemos probar nuestra API desde la terminal:
+
+```bash
+curl http://localhost:8080/api/hello
+```
+
+Respuesta:
+
+```text
+Hello from PayFlow API
+```
+
+Esto es importante porque no necesitamos un navegador para consumir una API.
+
+---
+
+# 30. Devolviendo JSON
+
+Podemos modificar el Controller:
+
+```kotlin
+@RestController
+class PayflowController {
+
+    @GetMapping("/api/hello")
+    fun hello(): Map<String, String> {
+        return mapOf(
+            "message" to "Hello from PayFlow API"
+        )
     }
 }
 ```
 
-Nuestro Service:
+La respuesta será conceptualmente:
+
+```json
+{
+  "message": "Hello from PayFlow API"
+}
+```
+
+Spring utiliza Jackson para convertir objetos Kotlin/Java a JSON.
+
+Más adelante utilizaremos `data class` para representar nuestros DTOs.
+
+---
+
+# 31. Primer DTO
+
+En lugar de utilizar un `Map`, podemos crear una `data class`.
+
+Creamos:
+
+```text
+dto/
+```
+
+y:
+
+```text
+HelloResponse.kt
+```
 
 ```kotlin
-@Service
-class RechargeService(
-    private val repository: RechargeRepository
-) {
+package com.payflow.api.dto
 
-    fun recharge() {
-        repository.save()
-    }
-}
+data class HelloResponse(
+    val message: String
+)
 ```
 
 Y nuestro Controller:
 
 ```kotlin
+package com.payflow.api.controller
+
+import com.payflow.api.dto.HelloResponse
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RestController
+
 @RestController
-class RechargeController(
-    private val service: RechargeService
-)
+class PayflowController {
+
+    @GetMapping("/api/hello")
+    fun hello(): HelloResponse {
+        return HelloResponse(
+            message = "Hello from PayFlow API"
+        )
+    }
+}
 ```
 
-Tenemos:
-
-```text
-RechargeController
-       │
-       │ necesita
-       ▼
-RechargeService
-       │
-       │ necesita
-       ▼
-RechargeRepository
-```
-
-Spring puede construir la cadena:
-
-```text
-RechargeRepository
-        ↓
-RechargeService
-        ↓
-RechargeController
-```
-
-Nosotros no necesitamos escribir:
-
-```kotlin
-val repository = RechargeRepository()
-
-val service = RechargeService(repository)
-
-val controller = RechargeController(service)
-```
-
-Spring lo hace por nosotros.
+Esto conecta nuevamente con lo aprendido en la Clase 2 sobre `data class`.
 
 ---
 
-# 19. ¿Cómo sabe Spring qué crear?
+# 32. Endpoint de Status
 
-Spring realiza un proceso conocido como:
-
-> **Component Scanning**
-
-Busca clases que estén marcadas con componentes reconocibles por Spring.
-
-Por ejemplo:
+Vamos a crear nuestro segundo endpoint:
 
 ```text
-@Component
-@Service
-@Repository
-@Controller
-@RestController
+GET /api/status
 ```
 
-Cuando encuentra estas clases, puede registrarlas como Beans.
+Podemos crear:
 
-Conceptualmente:
+```kotlin
+package com.payflow.api.dto
 
-```text
-Spring inicia
-     │
-     ▼
-Busca componentes
-     │
-     ▼
-Encuentra @Service
-     │
-     ▼
-Registra Bean
-     │
-     ▼
-Analiza dependencias
-     │
-     ▼
-Conecta Beans
+data class StatusResponse(
+    val status: String,
+    val application: String
+)
+```
+
+Y en el Controller:
+
+```kotlin
+@GetMapping("/api/status")
+fun status(): StatusResponse {
+    return StatusResponse(
+        status = "UP",
+        application = "PayFlow API"
+    )
+}
+```
+
+La respuesta será:
+
+```json
+{
+  "status": "UP",
+  "application": "PayFlow API"
+}
 ```
 
 ---
 
-# 20. ¿Qué pasa si un Service necesita otro Service?
+# 33. ¿Estamos haciendo Clean Architecture?
 
-Supongamos:
+Todavía no.
 
-```kotlin
-@Service
-class NotificationService
-```
-
-Y:
-
-```kotlin
-@Service
-class RechargeService(
-    private val notificationService: NotificationService
-)
-```
-
-Spring detecta:
+Nuestra estructura actual podría ser:
 
 ```text
-RechargeService
-       │
-       └── necesita NotificationService
+com.payflow.api
+│
+├── PayflowApplication.kt
+│
+├── controller
+│   └── PayflowController.kt
+│
+└── dto
+    ├── HelloResponse.kt
+    └── StatusResponse.kt
 ```
 
-Como `NotificationService` también es un Bean:
+No necesitamos crear 25 paquetes desde el primer día.
+
+La arquitectura aparecerá progresivamente a medida que el proyecto necesite nuevas responsabilidades.
+
+---
+
+# 34. Primer principio importante
+
+No queremos hacer esto:
+
+```kotlin
+@RestController
+class RechargeController {
+
+    @PostMapping("/recharges")
+    fun recharge() {
+
+        // validar usuario
+
+        // validar saldo
+
+        // consultar operador
+
+        // guardar en DB
+
+        // enviar notificación
+    }
+}
+```
+
+Eso fue precisamente uno de los problemas que identificamos en la Clase 1.
+
+El Controller debe encargarse principalmente de:
 
 ```text
-Spring Container
+HTTP
+ ↓
+recibir request
+ ↓
+delegar
+ ↓
+devolver response
+```
 
-NotificationService Bean
+La lógica de negocio estará en:
+
+```text
+Service
+```
+
+Y el acceso a datos:
+
+```text
+Repository
+```
+
+Lo veremos progresivamente.
+
+---
+
+# 35. Estructura que construiremos
+
+Finalmente queremos llegar aproximadamente a:
+
+```text
+com.payflow.api
+│
+├── PayflowApplication.kt
+│
+├── controller
+│
+├── service
+│
+├── repository
+│
+├── dto
+│
+├── domain
+│
+├── config
+│
+└── exception
+```
+
+Pero no vamos a crear todo ahora.
+
+Cada paquete aparecerá cuando tenga sentido.
+
+---
+
+# 36. ¿Qué pasa cuando arrancamos Spring?
+
+Podemos visualizarlo así:
+
+```text
+./gradlew bootRun
         │
         ▼
-RechargeService Bean
+      main()
+        │
+        ▼
+runApplication()
+        │
+        ▼
+Spring Boot
+        │
+        ▼
+ApplicationContext
+        │
+        ├── descubre Beans
+        │
+        ├── configura dependencias
+        │
+        ├── inicia Web Server
+        │
+        └── aplicación lista
 ```
 
-Spring realiza la inyección.
-
----
-
-# 21. ¿Qué pasa si falta una dependencia?
-
-Supongamos:
-
-```kotlin
-@Service
-class RechargeService(
-    private val repository: RechargeRepository
-)
-```
-
-pero `RechargeRepository` no está registrado como Bean.
-
-Spring intentará crear `RechargeService`.
-
-Pero descubrirá:
+Entonces:
 
 ```text
-Necesito RechargeRepository
-        ↓
-No existe Bean
-        ↓
-No puedo construir RechargeService
+localhost:8080
 ```
 
-La aplicación fallará durante el arranque.
-
-Esto es bueno porque Spring detecta el problema inmediatamente.
-
-No esperamos a que un usuario haga una request para descubrir que falta una dependencia.
+queda escuchando requests HTTP.
 
 ---
 
-# 22. ¿Qué pasa si existen dos implementaciones?
+# Ejercicios
 
-Supongamos:
+Resolvé estos ejercicios en tu cuaderno o en un archivo de práctica. Las respuestas no están incluidas; las revisaremos en la próxima clase.
 
-```kotlin
-interface PaymentProcessor {
+## Ejercicio 1
 
-    fun process()
-}
-```
+Explicá con tus palabras:
+
+> ¿Qué diferencia existe entre Spring Framework y Spring Boot?
+
+## Ejercicio 2
 
 Tenemos:
 
 ```kotlin
-@Component
-class MercadoPagoProcessor : PaymentProcessor
+@SpringBootApplication
+class PayflowApplication
 ```
 
-y:
+¿Qué función cumple `@SpringBootApplication`?
+
+## Ejercicio 3
+
+Describí el recorrido completo de una request:
+
+```http
+GET /api/users
+```
+
+desde el cliente hasta que Spring ejecuta el método del Controller.
+
+## Ejercicio 4
+
+¿Por qué este endpoint utiliza `GET`?
 
 ```kotlin
-@Component
-class StripeProcessor : PaymentProcessor
+@GetMapping("/users")
+fun users()
 ```
 
-Ahora:
+¿Qué método HTTP utilizarías para crear un nuevo usuario?
 
-```kotlin
-@Service
-class PaymentService(
-    private val processor: PaymentProcessor
-)
-```
+## Ejercicio 5
 
-Spring encuentra dos candidatos:
-
-```text
-PaymentProcessor
-       │
-       ├── MercadoPagoProcessor
-       │
-       └── StripeProcessor
-```
-
-Spring no sabe cuál elegir.
-
-Más adelante aprenderemos:
-
-```text
-@Qualifier
-@Primary
-```
-
-para resolver estos casos.
-
-Por ahora debemos recordar:
-
-> Spring necesita poder determinar qué Bean corresponde a cada dependencia.
-
----
-
-# 23. Interfaces y Dependency Injection
-
-Este concepto es muy importante para diseño de software.
-
-Podemos tener:
-
-```kotlin
-interface PaymentProcessor {
-
-    fun process()
-}
-```
-
-Y varias implementaciones:
-
-```kotlin
-class MercadoPagoProcessor : PaymentProcessor
-```
-
-```kotlin
-class StripeProcessor : PaymentProcessor
-```
-
-Nuestro Service puede depender de la abstracción:
-
-```kotlin
-class PaymentService(
-    private val processor: PaymentProcessor
-)
-```
-
-en lugar de depender directamente de:
-
-```kotlin
-MercadoPagoProcessor
-```
-
-Esto reduce el acoplamiento.
-
-Conceptualmente:
-
-```text
-PaymentService
-      ↓
-PaymentProcessor
-      ↑
-      │
- ┌────┴────┐
- │         │
-MercadoPago Stripe
-```
-
-Este diseño será muy importante cuando construyamos funcionalidades reales.
-
----
-
-# 24. Dependency Injection y testing
-
-Supongamos:
-
-```kotlin
-interface RechargeRepository {
-
-    fun save()
-}
-```
-
-Producción:
-
-```kotlin
-class PostgresRechargeRepository : RechargeRepository
-```
-
-Nuestro Service:
-
-```kotlin
-class RechargeService(
-    private val repository: RechargeRepository
-)
-```
-
-En producción:
-
-```kotlin
-val service = RechargeService(
-    PostgresRechargeRepository()
-)
-```
-
-Pero en un test podríamos usar:
-
-```kotlin
-class FakeRechargeRepository : RechargeRepository {
-
-    override fun save() {
-        // fake
-    }
-}
-```
-
-Y:
-
-```kotlin
-val service = RechargeService(
-    FakeRechargeRepository()
-)
-```
-
-El Service no necesita saber qué implementación recibió.
-
-Esto es una de las grandes ventajas de Dependency Injection.
-
----
-
-# 25. Constructor Injection en Kotlin + Spring
-
-En Java tradicional podemos encontrarnos con:
-
-```java
-@Autowired
-private RechargeService service;
-```
-
-No queremos aprender Spring de esa forma.
-
-En Kotlin preferiremos:
+¿Qué problema tendría este Controller?
 
 ```kotlin
 @RestController
-class RechargeController(
-    private val service: RechargeService
-)
+class RechargeController {
+
+    @PostMapping("/recharges")
+    fun recharge(): String {
+
+        // validar usuario
+        // validar saldo
+        // consultar operador
+        // guardar en DB
+        // enviar notificación
+
+        return "ok"
+    }
+}
 ```
 
-Spring detecta el constructor y realiza la inyección.
+## Ejercicio 6
 
-No necesitamos escribir:
+Crear un endpoint:
 
-```kotlin
-@Autowired
+```text
+GET /api/status
 ```
 
-cuando existe un único constructor.
+que devuelva:
 
-Esto produce código más limpio.
+```json
+{
+  "status": "UP",
+  "application": "PayFlow API"
+}
+```
+
+utilizando una `data class`.
 
 ---
 
-# 26. ¿Qué hace realmente Spring?
+# Preguntas de entrevista
 
-Sin Spring:
+Respondé estas preguntas sin mirar el material.
 
-```text
-Nuestro código
-     │
-     ├── crea objetos
-     ├── busca dependencias
-     ├── conecta objetos
-     └── administra su ciclo de vida
-```
-
-Con Spring:
-
-```text
-Spring Container
-     │
-     ├── crea objetos
-     ├── encuentra dependencias
-     ├── conecta objetos
-     └── administra Beans
-```
-
-Nuestro código se concentra principalmente en:
-
-```text
-reglas de negocio
-```
-
-y no en:
-
-```text
-cómo construir todo el grafo de objetos
-```
+1. ¿Qué es Spring Boot?
+2. ¿Qué hace `@SpringBootApplication`?
+3. ¿Qué sucede cuando ejecutás una aplicación Spring Boot?
+4. ¿Qué es Spring Initializr?
+5. ¿Qué función cumple Gradle?
+6. ¿Qué diferencia hay entre `src/main` y `src/test`?
+7. ¿Qué hace `@RestController`?
+8. ¿Qué hace `@GetMapping`?
+9. ¿Qué sucede cuando llega un `GET /api/users`?
 
 ---
 
-# 27. Dependency Graph
+# Resumen
 
-Cuando una aplicación crece, podemos pensar en sus componentes como un grafo de dependencias.
-
-Por ejemplo:
+Los conceptos principales de esta clase pueden resumirse así:
 
 ```text
-                    Controller
-                        │
-                        ▼
-                 RechargeService
-                  /            \
-                 ▼              ▼
-        RechargeRepository   NotificationService
-                 │                    │
-                 ▼                    ▼
-             PostgreSQL          EmailClient
-```
-
-Spring construye y administra este grafo.
-
-Esto se conoce como:
-
-> **Dependency Graph**
-
-Es un concepto importante para entender cómo funciona Spring.
-
----
-
-# 28. ¿Spring crea una instancia por cada request?
-
-Por defecto, no.
-
-Los Beans de Spring normalmente tienen:
-
-> **Singleton scope**
-
-Esto significa que Spring normalmente crea una instancia del Bean y la reutiliza.
-
-Por ejemplo:
-
-```text
-RechargeService
+Spring Framework
        │
        ▼
-   instancia 1
+Spring Boot
        │
-       ├── Request 1
-       ├── Request 2
-       ├── Request 3
-       └── Request 4
-```
-
-Esto tiene una consecuencia importante:
-
-> Los Services y otros Beans singleton deben diseñarse pensando en concurrencia.
-
-Debemos evitar almacenar estado mutable específico de una request:
-
-```kotlin
-@Service
-class RechargeService {
-
-    private var currentUser: String? = null
-}
-```
-
-Esto sería peligroso.
-
-Distintas requests podrían acceder al mismo Bean.
-
-Preferimos:
-
-```kotlin
-@Service
-class RechargeService {
-
-    fun recharge(userId: Long) {
-        // datos propios de esta operación
-    }
-}
-```
-
-El estado de la operación debe estar en variables locales o estructuras apropiadas, no en propiedades mutables compartidas del Singleton.
-
----
-
-# 29. Ciclo básico de un Bean
-
-Simplificando mucho, cuando Spring inicia:
-
-```text
-1. Spring arranca
-       ↓
-2. Encuentra componentes
-       ↓
-3. Registra Bean definitions
-       ↓
-4. Resuelve dependencias
-       ↓
-5. Crea Beans
-       ↓
-6. Inyecta dependencias
-       ↓
-7. Inicializa Beans
-       ↓
-8. ApplicationContext queda listo
-```
-
-No necesitamos memorizar todos los detalles internos todavía.
-
-Lo importante es entender el concepto.
-
----
-
-# 30. Primer modelo mental de Spring
-
-Quiero que tengas este modelo mental:
-
-```text
-                    SPRING
-                      │
-                      ▼
-              ApplicationContext
-                      │
-             ┌────────┼────────┐
-             │        │        │
-             ▼        ▼        ▼
-        Controller  Service  Repository
-             │        │        │
-             └────────┼────────┘
-                      │
-                      ▼
-                Dependencies
-```
-
-Spring administra estos objetos.
-
-Nosotros definimos sus responsabilidades y dependencias.
-
----
-
-# 🧪 Ejercicios
-
-## Ejercicio 1 — Sin Spring
-
-Tenemos:
-
-```kotlin
-class PaymentRepository {
-
-    fun save() {
-        println("Payment saved")
-    }
-}
-
-class PaymentService(
-    private val repository: PaymentRepository
-) {
-
-    fun pay() {
-        repository.save()
-    }
-}
-```
-
-### Respuesta
-
-```kotlin
-val paymentService = PaymentService(
-    PaymentRepository()
-)
-```
-
-Acá estamos realizando manualmente la Dependency Injection.
-
----
-
-## Ejercicio 2 — Identificar Dependency Injection
-
-Tenemos:
-
-```kotlin
-class PaymentService(
-    private val repository: PaymentRepository
-)
-```
-
-### Respuesta
-
-La dependencia de `PaymentService` es `PaymentRepository`.
-
-La dependencia se proporciona desde afuera y se inyecta mediante el constructor.
-
-Esto es **constructor injection**.
-
----
-
-## Ejercicio 3 — Convertirlo en Spring
-
-Tenemos:
-
-```kotlin
-class PaymentRepository {
-
-    fun save() {
-        println("Payment saved")
-    }
-}
-
-class PaymentService(
-    private val repository: PaymentRepository
-) {
-
-    fun pay() {
-        repository.save()
-    }
-}
-```
-
-### Respuesta
-
-```kotlin
-@Repository
-class PaymentRepository {
-    // ...
-}
-```
-
-y:
-
-```kotlin
-@Service
-class PaymentService(
-    private val repository: PaymentRepository
-) {
-    // ...
-}
-```
-
-Spring podrá administrar ambas clases como Beans.
-
----
-
-## Ejercicio 4 — Arquitectura
-
-Tenemos:
-
-```text
-PaymentController
-PaymentService
-PaymentRepository
-```
-
-### Respuesta
-
-Como relación de dependencias:
-
-```text
-PaymentController
-       ↓
-PaymentService
-       ↓
-PaymentRepository
-```
-
-Esto significa:
-
-```text
-PaymentController DEPENDE de PaymentService
-
-PaymentService DEPENDE de PaymentRepository
-```
-
-Cada capa mantiene una responsabilidad diferente.
-
----
-
-## Ejercicio 5 — Problema de diseño
-
-Tenemos:
-
-```kotlin
-@Service
-class PaymentService {
-
-    private val repository = PaymentRepository()
-
-    fun pay() {
-        repository.save()
-    }
-}
-```
-
-### Respuesta
-
-El problema es que `PaymentService` está creando directamente su propia dependencia.
-
-Esto:
-
-* aumenta el acoplamiento;
-* dificulta los tests;
-* evita que Spring controle esa dependencia;
-* hace más difícil reemplazar la implementación.
-
-Preferimos:
-
-```kotlin
-@Service
-class PaymentService(
-    private val repository: PaymentRepository
-) {
-
-    fun pay() {
-        repository.save()
-    }
-}
-```
-
-Ahora la dependencia es proporcionada desde afuera mediante el constructor.
-
----
-
-## Ejercicio 6 — Interfaces
-
-Tenemos:
-
-```kotlin
-interface PaymentProcessor {
-
-    fun process()
-}
-```
-
-y:
-
-```kotlin
-@Component
-class MercadoPagoProcessor : PaymentProcessor {
-
-    override fun process() {
-        println("Mercado Pago")
-    }
-}
-```
-
-### Respuesta
-
-Es mejor que `PaymentService` dependa de:
-
-```kotlin
-PaymentProcessor
-```
-
-porque `PaymentProcessor` representa la abstracción.
-
-`MercadoPagoProcessor` es solamente una implementación concreta.
-
-Esto permite reemplazar la implementación sin modificar el Service.
-
----
-
-## Ejercicio 7 — Dos Beans
-
-Tenemos:
-
-```kotlin
-@Component
-class MercadoPagoProcessor : PaymentProcessor
-```
-
-y:
-
-```kotlin
-@Component
-class StripeProcessor : PaymentProcessor
-```
-
-Y:
-
-```kotlin
-@Service
-class PaymentService(
-    private val processor: PaymentProcessor
-)
-```
-
-### Respuesta
-
-Spring encuentra dos Beans compatibles con `PaymentProcessor`:
-
-```text
-PaymentProcessor
+       ▼
+Application
        │
-       ├── MercadoPagoProcessor
-       └── StripeProcessor
+       ▼
+ApplicationContext
+       │
+       ▼
+Beans
+       │
+       ▼
+Web Server
+       │
+       ▼
+HTTP Request
+       │
+       ▼
+Controller
+       │
+       ▼
+Service
+       │
+       ▼
+Repository
+       │
+       ▼
+Database
 ```
 
-Por lo tanto, Spring no sabe cuál debe inyectar.
-
-Más adelante podremos resolverlo mediante:
-
-```text
-@Primary
-@Qualifier
-```
-
----
-
-# 🎤 Preguntas de entrevista
-
-### Spring
-
-> ¿Qué es IoC?
-
-**Respuesta esperada:**
-
-IoC es la inversión de control. En lugar de que nuestro código sea responsable de crear y administrar sus dependencias, delegamos esa responsabilidad a un container como el de Spring.
-
----
-
-### Spring
-
-> ¿Qué es Dependency Injection?
-
-**Respuesta esperada:**
-
-Es un mecanismo mediante el cual un objeto recibe desde afuera las dependencias que necesita, en lugar de crearlas internamente.
-
----
-
-### Spring
-
-> ¿Cuál es la diferencia entre IoC y Dependency Injection?
-
-**Respuesta esperada:**
-
-IoC es el concepto general de delegar el control de creación y administración de objetos. Dependency Injection es uno de los mecanismos utilizados para implementar esa inversión de control.
-
----
-
-### Spring
-
-> ¿Qué es un Spring Bean?
-
-**Respuesta esperada:**
-
-Es un objeto cuya creación y ciclo de vida son administrados por el Spring Container.
-
----
-
-### Spring
-
-> ¿Qué es el ApplicationContext?
-
-**Respuesta esperada:**
-
-Es la representación principal del contexto de Spring que contiene y administra los Beans y sus dependencias.
-
----
-
-### Spring
-
-> ¿Qué diferencia hay entre `@Component`, `@Service` y `@Repository`?
-
-**Respuesta esperada:**
-
-Las tres permiten registrar componentes como Beans, pero expresan diferentes responsabilidades. `@Component` es genérico, `@Service` representa normalmente lógica de negocio y `@Repository` representa acceso a datos.
-
----
-
-### Spring
-
-> ¿Qué es constructor injection?
-
-**Respuesta esperada:**
-
-Es la inyección de dependencias mediante el constructor de una clase.
-
----
-
-### Spring
-
-> ¿Por qué preferís constructor injection?
-
-**Respuesta esperada:**
-
-Porque hace explícitas las dependencias, permite utilizar `val`, facilita la inmutabilidad y mejora la testeabilidad.
-
----
-
-### Spring
-
-> ¿Por qué Dependency Injection mejora la testeabilidad?
-
-**Respuesta esperada:**
-
-Porque podemos proporcionar implementaciones alternativas, como mocks o fakes, sin modificar la clase que estamos testeando.
-
----
-
-### Spring
-
-> ¿Qué sucede si Spring encuentra dos Beans compatibles con una misma dependencia?
-
-**Respuesta esperada:**
-
-Spring no puede determinar automáticamente cuál utilizar y debemos resolver la ambigüedad, por ejemplo mediante `@Primary` o `@Qualifier`.
-
----
-
-### Spring
-
-> ¿Qué significa que un Bean tenga scope Singleton?
-
-**Respuesta esperada:**
-
-Significa que, por defecto, Spring administra una única instancia del Bean dentro del ApplicationContext y la reutiliza para las distintas requests.
-
----
-
-# 🧠 Lo que debo poder explicar sin mirar
-
-Al terminar esta clase debería poder explicar:
-
-* Qué problema resuelve Spring.
-* Qué significa IoC.
-* Qué significa Dependency Injection.
-* La diferencia entre IoC y DI.
-* Qué es un Bean.
-* Qué es el Spring Container.
-* Qué es el ApplicationContext.
-* Qué hace `@Component`.
-* Qué representa `@Service`.
-* Qué representa `@Repository`.
-* Qué representa `@Controller`.
-* Qué es constructor injection.
-* Por qué constructor injection es preferible.
-* Cómo Spring descubre componentes.
-* Cómo Spring resuelve dependencias.
-* Qué ocurre si falta una dependencia.
-* Qué ocurre si existen dos Beans compatibles.
-* Qué es un Dependency Graph.
-* Qué significa Singleton Scope.
-* Por qué los Beans Singleton no deberían guardar estado mutable específico de una request.
-* Cómo Dependency Injection facilita los tests.
-
----
-
-# ☑️ Checklist
-
-* [x] Entiendo qué problema resuelve Spring.
-* [x] Entiendo IoC.
-* [x] Entiendo Dependency Injection.
-* [x] Puedo explicar IoC vs DI.
-* [x] Entiendo qué es un Bean.
-* [x] Entiendo Spring Container.
-* [x] Entiendo ApplicationContext.
-* [x] Conozco `@Component`.
-* [x] Conozco `@Service`.
-* [x] Conozco `@Repository`.
-* [x] Conozco `@Controller`.
-* [x] Entiendo constructor injection.
-* [x] Sé por qué preferimos constructor injection.
-* [x] Entiendo component scanning.
-* [x] Entiendo dependency graph.
-* [x] Entiendo qué pasa cuando falta una dependencia.
-* [x] Entiendo qué pasa cuando existen múltiples implementaciones.
-* [x] Entiendo Singleton Scope.
-* [x] Completé los ejercicios.
-* [x] Respondí las preguntas de entrevista.
-
----
-
-# 🏁 Estado de la clase
-
-**🟢 COMPLETADA**
-
-Los ejercicios fueron revisados.
-
-Resultado:
-
-> **7/7 ejercicios correctos conceptualmente.**
-
-El único ajuste realizado fue en el ejercicio 4, donde la dirección correcta de las dependencias es:
-
-```text
-PaymentController
-       ↓
-PaymentService
-       ↓
-PaymentRepository
-```
-
-Recordar:
-
-> **A depende de B → A necesita a B.**
-
----
-
-# 🚀 Próxima clase
-
-# Clase 4 — Crear nuestro primer proyecto Spring Boot con Kotlin
-
-En la próxima clase pasaremos de la teoría a código real.
-
-Crearemos:
+Y respecto a nuestro proyecto:
 
 ```text
 PayFlow API
 │
-├── Spring Boot
 ├── Kotlin
+├── Spring Boot
 ├── Gradle
-└── Java
+├── Spring Web
+│
+└── API REST
 ```
 
-Y veremos:
+---
+
+# Checklist
+
+* [ ] Creé el proyecto PayFlow API.
+* [ ] Utilicé Kotlin.
+* [ ] Utilicé Gradle Kotlin DSL.
+* [ ] Configuré Java.
+* [ ] Agregué Spring Web.
+* [ ] Entiendo `build.gradle.kts`.
+* [ ] Entiendo `settings.gradle.kts`.
+* [ ] Entiendo `src/main`.
+* [ ] Entiendo `src/test`.
+* [ ] Entiendo `@SpringBootApplication`.
+* [ ] Entiendo `runApplication`.
+* [ ] Pude ejecutar `./gradlew bootRun`.
+* [ ] La aplicación inicia correctamente.
+* [ ] Creé `PayflowController`.
+* [ ] Creé `GET /api/hello`.
+* [ ] Probé el endpoint.
+* [ ] Creé una `data class` para una respuesta.
+* [ ] Creé `GET /api/status`.
+* [ ] Entiendo el recorrido de una request.
+* [ ] Completé los ejercicios.
+* [ ] Revisé las preguntas de entrevista.
+
+---
+
+# Estado de la clase
+
+**🟢 COMPLETADA**
+
+Conceptos dominados:
 
 ```text
-Spring Initializr
-        ↓
-Proyecto
-        ↓
-Gradle
-        ↓
-Application
-        ↓
-Spring Boot
-        ↓
-Primer endpoint
-        ↓
-Primera request HTTP
+✓ Spring Framework
+✓ Spring Boot
+✓ Spring Initializr
+✓ Gradle
+✓ Spring Application
+✓ @SpringBootApplication
+✓ ApplicationContext
+✓ Embedded Server
+✓ @RestController
+✓ @GetMapping
+✓ HTTP GET
+✓ DTO
+✓ JSON
+✓ Request → Controller → Response
+✓ Separación de responsabilidades
 ```
 
-También vamos a entender realmente qué significa:
+---
 
-```kotlin
-@SpringBootApplication
-```
+# Próxima clase
 
-y qué sucede cuando ejecutamos:
+## Clase 4 — IoC: Inversion of Control
+
+Vamos a entender uno de los conceptos centrales de Spring:
 
 ```text
-./gradlew bootRun
+Inversion of Control
 ```
 
-A partir de esta clase comenzaremos a construir **PayFlow API de manera incremental**, utilizando cada concepto del curso en un proyecto real.
+Y por qué Spring se encarga de crear y administrar objetos de nuestra aplicación.
