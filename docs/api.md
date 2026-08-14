@@ -33,6 +33,26 @@ Respuesta:
 }
 ```
 
+### Headers de prueba
+
+```http
+GET /api/headers
+X-Request-Id: abc-123
+```
+
+Respuesta `200 OK`:
+
+```json
+{
+  "method": "GET",
+  "path": "/api/headers",
+  "contentType": null,
+  "receivedRequestId": "abc-123"
+}
+```
+
+Además devuelve el header `X-Response-Id` con el valor recibido o un identificador generado.
+
 ### Crear recarga
 
 ```http

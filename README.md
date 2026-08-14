@@ -52,6 +52,7 @@ Endpoints de prueba:
 ```text
 GET /api/hello
 GET /api/status
+GET /api/headers
 ```
 
 ---
