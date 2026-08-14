@@ -1,11 +1,13 @@
 package com.payflow.api.controller
 
 import com.payflow.api.dto.CreateRechargeRequest
+import com.payflow.api.dto.PatchRechargeRequest
 import com.payflow.api.dto.RechargeResponse
 import com.payflow.api.service.RechargeService
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -31,6 +33,17 @@ class RechargeController(
         @PathVariable id: Long
     ): ResponseEntity<RechargeResponse> {
         val response = rechargeService.findById(id)
+            ?: return ResponseEntity.notFound().build()
+
+        return ResponseEntity.ok(response)
+    }
+
+    @PatchMapping("/{id}")
+    fun patch(
+        @PathVariable id: Long,
+        @RequestBody request: PatchRechargeRequest
+    ): ResponseEntity<RechargeResponse> {
+        val response = rechargeService.patch(id, request)
             ?: return ResponseEntity.notFound().build()
 
         return ResponseEntity.ok(response)

@@ -3,6 +3,7 @@ package com.payflow.api.service
 import com.payflow.api.domain.Recharge
 import com.payflow.api.domain.RechargeStatus
 import com.payflow.api.dto.CreateRechargeRequest
+import com.payflow.api.dto.PatchRechargeRequest
 import com.payflow.api.dto.RechargeResponse
 import com.payflow.api.repository.RechargeRepository
 import org.springframework.stereotype.Service
@@ -37,6 +38,13 @@ class RechargeService(
 
     fun findById(id: Long): RechargeResponse? {
         return rechargeRepository.findById(id)?.toResponse()
+    }
+
+    fun patch(id: Long, request: PatchRechargeRequest): RechargeResponse? {
+        val updated = rechargeRepository.updateStatus(id, request.status)
+            ?: return null
+
+        return updated.toResponse()
     }
 
     private fun Recharge.toResponse(): RechargeResponse {

@@ -1,6 +1,7 @@
 package com.payflow.api.repository
 
 import com.payflow.api.domain.Recharge
+import com.payflow.api.domain.RechargeStatus
 import org.springframework.stereotype.Repository
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
@@ -27,5 +28,21 @@ class RechargeRepository {
 
     fun findById(id: Long): Recharge? {
         return storage[id]
+    }
+
+    fun updateStatus(id: Long, status: RechargeStatus): Recharge? {
+        val existing = storage[id] ?: return null
+
+        val updated = Recharge(
+            id = existing.id,
+            amount = existing.amount,
+            phoneNumber = existing.phoneNumber,
+            operator = existing.operator,
+            type = existing.type,
+            status = status
+        )
+
+        storage[id] = updated
+        return updated
     }
 }

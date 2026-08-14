@@ -101,6 +101,32 @@ Respuesta `200 OK` si existe:
 
 Respuesta `404 Not Found` si no existe.
 
+### Modificar estado de una recarga
+
+```http
+PATCH /api/recharges/{id}
+Content-Type: application/json
+
+{
+  "status": "COMPLETED"
+}
+```
+
+Respuesta `200 OK` si existe:
+
+```json
+{
+  "id": 1,
+  "amount": 1000,
+  "phoneNumber": "3531234567",
+  "operator": "PERSONAL",
+  "type": "PREPAID",
+  "status": "COMPLETED"
+}
+```
+
+Respuesta `404 Not Found` si no existe.
+
 ## Modelos
 
 ### `Operator`
