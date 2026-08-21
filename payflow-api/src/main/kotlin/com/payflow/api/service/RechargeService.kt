@@ -5,6 +5,7 @@ import com.payflow.api.domain.RechargeStatus
 import com.payflow.api.dto.CreateRechargeRequest
 import com.payflow.api.dto.PatchRechargeRequest
 import com.payflow.api.dto.RechargeResponse
+import com.payflow.api.dto.UpdateRechargeRequest
 import com.payflow.api.repository.RechargeRepository
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
@@ -45,6 +46,35 @@ class RechargeService(
             ?: return null
 
         return updated.toResponse()
+    }
+
+    fun findAll(): List<RechargeResponse> {
+        val response = rechargeRepository.findAll()
+
+        return response.map { it.toResponse() }
+    }
+
+    fun update(id: Long, request: UpdateRechargeRequest): RechargeResponse? {
+        val existing = rechargeRepository.findById(id)
+            ?: return null
+
+        val updated = Recharge(
+            id = existing.id,
+            amount = request.amount,
+            phoneNumber = request.phoneNumber,
+            operator = request.operator,
+            type = request.type,
+            status = existing.status
+        )
+
+        val saved = rechargeRepository.update(id, updated)
+            ?: return null
+
+        return saved.toResponse()
+    }
+
+    fun delete(id: Long): Boolean {
+        return rechargeRepository.delete(id)
     }
 
     private fun Recharge.toResponse(): RechargeResponse {

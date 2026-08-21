@@ -80,6 +80,27 @@ Respuesta `201 Created`:
 }
 ```
 
+### Listar recargas
+
+```http
+GET /api/recharges
+```
+
+Respuesta `200 OK`:
+
+```json
+[
+  {
+    "id": 1,
+    "amount": 1000,
+    "phoneNumber": "3531234567",
+    "operator": "PERSONAL",
+    "type": "PREPAID",
+    "status": "PENDING"
+  }
+]
+```
+
 ### Obtener recarga por ID
 
 ```http
@@ -124,6 +145,45 @@ Respuesta `200 OK` si existe:
   "status": "COMPLETED"
 }
 ```
+
+Respuesta `404 Not Found` si no existe.
+
+### Reemplazar una recarga
+
+```http
+PUT /api/recharges/{id}
+Content-Type: application/json
+
+{
+  "amount": 2000,
+  "phoneNumber": "3531234567",
+  "operator": "PERSONAL",
+  "type": "PREPAID"
+}
+```
+
+Respuesta `200 OK` si existe:
+
+```json
+{
+  "id": 1,
+  "amount": 2000,
+  "phoneNumber": "3531234567",
+  "operator": "PERSONAL",
+  "type": "PREPAID",
+  "status": "PENDING"
+}
+```
+
+Respuesta `404 Not Found` si no existe.
+
+### Eliminar una recarga
+
+```http
+DELETE /api/recharges/{id}
+```
+
+Respuesta `204 No Content` si existe.
 
 Respuesta `404 Not Found` si no existe.
 

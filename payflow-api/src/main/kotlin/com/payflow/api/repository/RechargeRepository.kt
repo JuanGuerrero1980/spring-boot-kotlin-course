@@ -30,6 +30,10 @@ class RechargeRepository {
         return storage[id]
     }
 
+    fun findAll(): List<Recharge> {
+        return storage.values.toList()
+    }
+
     fun updateStatus(id: Long, status: RechargeStatus): Recharge? {
         val existing = storage[id] ?: return null
 
@@ -44,5 +48,18 @@ class RechargeRepository {
 
         storage[id] = updated
         return updated
+    }
+
+    fun update(id: Long, recharge: Recharge): Recharge? {
+        if (!storage.containsKey(id)) {
+            return null
+        }
+
+        storage[id] = recharge
+        return recharge
+    }
+
+    fun delete(id: Long): Boolean {
+        return storage.remove(id) != null
     }
 }
