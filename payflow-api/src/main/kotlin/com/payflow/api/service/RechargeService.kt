@@ -16,14 +16,6 @@ class RechargeService(
 ) {
 
     fun create(request: CreateRechargeRequest): RechargeResponse {
-        require(request.amount > BigDecimal.ZERO) {
-            "Amount must be greater than zero"
-        }
-
-        require(request.phoneNumber.isNotBlank()) {
-            "Phone number is required"
-        }
-
         val recharge = Recharge(
             id = 0,
             amount = request.amount,

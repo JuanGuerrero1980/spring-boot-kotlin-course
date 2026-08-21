@@ -2,6 +2,19 @@
 
 Documento vivo de endpoints y contratos de la API.
 
+## Validaciones
+
+Los request bodies de `POST`, `PUT` y `PATCH` sobre `/api/recharges` se validan con Bean Validation.
+
+Reglas generales:
+
+* `amount` debe ser mayor que cero (`@Positive`).
+* `phoneNumber` no puede estar vacío (`@NotBlank`).
+* `operator` y `type` no pueden ser nulos (`@NotNull`).
+* `status` no puede ser nulo (`@NotNull`).
+
+Si alguna validación falla, la API responde `400 Bad Request` con detalles del error.
+
 ## Endpoints actuales
 
 ### Health check

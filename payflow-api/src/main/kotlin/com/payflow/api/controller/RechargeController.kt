@@ -5,6 +5,7 @@ import com.payflow.api.dto.PatchRechargeRequest
 import com.payflow.api.dto.RechargeResponse
 import com.payflow.api.dto.UpdateRechargeRequest
 import com.payflow.api.service.RechargeService
+import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -25,7 +26,7 @@ class RechargeController(
 
     @PostMapping
     fun create(
-        @RequestBody request: CreateRechargeRequest
+        @Valid @RequestBody request: CreateRechargeRequest
     ): ResponseEntity<RechargeResponse> {
         val response = rechargeService.create(request)
         return ResponseEntity.status(HttpStatus.CREATED).body(response)
@@ -44,7 +45,7 @@ class RechargeController(
     @PatchMapping("/{id}")
     fun patch(
         @PathVariable id: Long,
-        @RequestBody request: PatchRechargeRequest
+        @Valid @RequestBody request: PatchRechargeRequest
     ): ResponseEntity<RechargeResponse> {
         val response = rechargeService.patch(id, request)
             ?: return ResponseEntity.notFound().build()
@@ -61,7 +62,7 @@ class RechargeController(
     @PutMapping("/{id}")
     fun replace(
         @PathVariable id: Long,
-        @RequestBody request: UpdateRechargeRequest
+        @Valid @RequestBody request: UpdateRechargeRequest
     ): ResponseEntity<RechargeResponse> {
         val response = rechargeService.update(id, request)
             ?: return ResponseEntity.notFound().build()
